@@ -17,20 +17,11 @@ interface Submission {
   status: "Confirmed" | "Waitlist";
 }
 
-interface ResultsTableProps {
+interface ResponsesProps {
   submissions: Submission[];
 }
 
-const getRoleBadgeColor = (status: string) => {
-  switch (status) {
-    case "Confirmed":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-    default:
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-300";
-  }
-};
-
-export default function ResultsTable({ submissions }: ResultsTableProps) {
+export default function Responses({ submissions }: ResponsesProps) {
   return (
     <Table className="text-xs">
       <TableHeader>
@@ -48,9 +39,7 @@ export default function ResultsTable({ submissions }: ResultsTableProps) {
             <TableCell>{submission.timestamp}</TableCell>
             <TableCell>{submission.fullName}</TableCell>
             <TableCell>
-              <Badge className={getRoleBadgeColor(submission.status)}>
-                {submission.status}
-              </Badge>
+              <Badge variant={submission.status}>{submission.status}</Badge>
             </TableCell>
           </TableRow>
         ))}

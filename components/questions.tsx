@@ -1,6 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -13,102 +10,47 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { Submission } from "./gym-attendance";
-import { auth } from "@/auth";
 import { Session } from "next-auth";
+import { FormData } from "./master-form";
+import { UseFormReturn } from "react-hook-form";
 
-const formSchema = z.object({
-  fullName: z.string().min(1, { message: "Full name is required" }),
-  waiverSigned: z.boolean().refine((val) => val === true, {
-    message: "You must agree to the gym usage waiver",
-  }),
-  safetyCommitment: z.boolean().refine((val) => val === true, {
-    message: "You must commit to safe and respectful behavior",
-  }),
-});
-
-export type FormData = z.infer<typeof formSchema>;
-
-interface GymFormProps {
+interface QuestionsProps {
   session: Session | null;
   onSubmit: (data: FormData) => void;
-  formDate: string;
-  setFormDate: (date: string) => void;
-  editingSubmission: Submission | null;
-  setEditingSubmission: (submission: Submission | null) => void;
+  editingSubmission: boolean;
+  setEditingSubmission: (submission: boolean) => void;
+  showForm: boolean;
+  setShowForm: (form: boolean) => void;
+  form: UseFormReturn<FormData>;
 }
 
-export default function GymForm({
+export default function Questions({
   session,
   onSubmit,
   editingSubmission,
   setEditingSubmission,
-}: GymFormProps) {
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showForm, setShowForm] = useState(true);
-
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      fullName: session?.user?.name || "",
-      waiverSigned: false,
-      safetyCommitment: false,
-    },
-  });
-
-  useEffect(() => {
-    if (editingSubmission) {
-      form.reset({
-        fullName: editingSubmission.fullName,
-        waiverSigned: editingSubmission.waiverSigned,
-        safetyCommitment: editingSubmission.safetyCommitment,
-      });
-      setShowForm(true);
-      setShowSuccess(false);
-    }
-  }, [editingSubmission, form]);
-
+  showForm,
+  setShowForm,
+  form,
+}: QuestionsProps) {
   const handleSubmit = (data: FormData) => {
     onSubmit(data);
-    setShowSuccess(true);
     setShowForm(false);
-    setEditingSubmission(null);
   };
 
   const handleEdit = () => {
     setShowForm(true);
-    setShowSuccess(false);
+    setEditingSubmission(true);
   };
-
-  if (!showForm && !showSuccess) {
-    return null;
-  }
 
   return (
     <Form {...form}>
-      {showSuccess && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Success</AlertTitle>
-          <AlertDescription>
-            Your form has been submitted successfully.
-          </AlertDescription>
-          <Button
-            className="text-blue-500 underline"
-            variant="link"
-            onClick={handleEdit}
-          >
-            Edit your response
-          </Button>
-        </Alert>
-      )}
-      {showForm && (
+      {showForm ? (
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="space-y-4 pt-4 text-sm text-gray-600">
+          <div className="space-y-4 pt-4 text-sm text-gray-500">
             <div>
               <p>
                 Submission of this form implies your attendance for Monday
@@ -209,9 +151,24 @@ export default function GymForm({
             )}
           />
           <Button type="submit">
-            {editingSubmission ? "Update" : "Submit"}
+            {editingSubmission ? "Resubmit" : "Submit"}
           </Button>
         </form>
+      ) : (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Success</AlertTitle>
+          <AlertDescription>
+            Your form has been submitted successfully.
+          </AlertDescription>
+          <Button
+            className="text-blue-500 underline"
+            variant="link"
+            onClick={handleEdit}
+          >
+            Edit your response
+          </Button>
+        </Alert>
       )}
     </Form>
   );

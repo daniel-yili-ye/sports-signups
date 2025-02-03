@@ -3,10 +3,24 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import GymForm from "./gym-form";
-import ResultsTable from "./results-table";
-import { FormData } from "./gym-form";
+import Questions from "./questions";
+import Responses from "./responses";
 import { Session } from "next-auth";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const formSchema = z.object({
+  fullName: z.string().min(1, { message: "Full name is required" }),
+  waiverSigned: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the gym usage waiver",
+  }),
+  safetyCommitment: z.boolean().refine((val) => val === true, {
+    message: "You must commit to safe and respectful behavior",
+  }),
+});
+
+export type FormData = z.infer<typeof formSchema>;
 
 export interface Submission extends FormData {
   id: number;
@@ -14,18 +28,20 @@ export interface Submission extends FormData {
   status: "Confirmed" | "Waitlist";
 }
 
-export default function GymAttendance({
-  session,
-}: {
-  session: Session | null;
-}) {
+export default function MasterForm({ session }: { session: Session | null }) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [formDate, setFormDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
-  const [editingSubmission, setEditingSubmission] = useState<Submission | null>(
-    null
-  );
+  const [editingSubmission, setEditingSubmission] = useState<boolean>(false);
+  const [showForm, setShowForm] = useState(true);
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      fullName: session?.user?.name || "",
+      waiverSigned: false,
+      safetyCommitment: false,
+    },
+  });
+
   const handleSubmit = (data: FormData) => {
     const newSubmission = {
       ...data,
@@ -52,23 +68,24 @@ export default function GymAttendance({
         <h1 className="text-2xl font-bold mb-4">Basketball Attendance Form</h1>
         <Tabs defaultValue="form">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="form">Attendance Form</TabsTrigger>
+            <TabsTrigger value="form">Questions</TabsTrigger>
             <TabsTrigger value="results">
-              Results Table ({submissions.length})
+              Responses ({submissions.length})
             </TabsTrigger>
           </TabsList>
           <TabsContent value="form">
-            <GymForm
+            <Questions
               session={session}
               onSubmit={handleSubmit}
-              formDate={formDate}
-              setFormDate={setFormDate}
+              showForm={showForm}
+              setShowForm={setShowForm}
               editingSubmission={editingSubmission}
               setEditingSubmission={setEditingSubmission}
+              form={form}
             />
           </TabsContent>
           <TabsContent value="results">
-            <ResultsTable submissions={submissions} />
+            <Responses submissions={submissions} />
           </TabsContent>
         </Tabs>
       </CardContent>
